@@ -1,0 +1,61 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: postgres
+labels:
+- includeSelectors: true
+  pairs:
+    ax.platform.component-type: storage
+    ax.platform.component-subtype: metadata
+    ax.platform.component-tool: postgres
+
+
+helmCharts:
+- name: postgresql
+  releaseName: 15.6.0
+  repo: oci://registry-1.docker.io/bitnamicharts
+
+resources:
+  - base/ns.yaml
+  - base/pv.yaml
+  - base/pvc.yaml
+
+# to avoid dot in service names
+patches:
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: postgresql-15-6-0
+    target:
+      kind: Service
+      name: 15.6.0-postgresql
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: postgresql-hl-15-6-0
+    target:
+      kind: Service
+      name: 15.6.0-postgresql-hl
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: 15-6-0-postgresql
+    target:
+      kind: StatefulSet
+      name: 15.6.0-postgresql
+  - patch: |-
+      - op: replace
+        path: /spec/template/metadata/name
+        value: 15-6-0-postgresql
+    target:
+      kind: StatefulSet
+      name: 15.6.0-postgresql
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/nodeSelector
+        value: 
+          ax.platform.component-subtype: metadata
+          ax.platform.component-tool: postgres
+          ax.platform.component-type: storage
+    target:
+      kind: StatefulSet
+      name: 15.6.0-postgresql

@@ -1,0 +1,8 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lakehouse-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - 10.34.41.59-10.34.41.59

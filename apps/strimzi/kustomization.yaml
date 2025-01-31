@@ -1,0 +1,59 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: strimzi
+labels:
+- includeSelectors: true
+  pairs:
+    ax.platform.component-type: lakehouse-message-queue
+    ax.platform.component-subtype: lakehouse-message-queue
+resources:
+  # name spaces and roles
+  - base/ns.yaml
+  - base/strimzi-admin/010-ClusterRole-strimzi-admin.yaml
+  - base/strimzi-admin/020-ClusterRole-strimzi-view.yaml
+
+  # Create persistent volumes
+  - base/pv-files/pv.yaml
+  - base/pv-files/pv1.yaml
+  - base/pv-files/pv2.yaml
+  - base/pv-files/pv3.yaml
+  - base/pv-files/pv4.yaml
+  - base/pv-files/pv5.yaml
+  - base/pv-files/pv6.yaml
+  - base/pv-files/pv7.yaml
+  - base/pv-files/pv8.yaml
+  - base/pv-files/pv9.yaml
+  - base/pv-files/pv10.yaml
+
+  # Create Strimzi required components
+  - base/cluster-operator/010-ServiceAccount-strimzi-cluster-operator.yaml
+  - base/cluster-operator/020-ClusterRole-strimzi-cluster-operator-role.yaml
+  - base/cluster-operator/020-RoleBinding-strimzi-cluster-operator.yaml
+  - base/cluster-operator/021-ClusterRole-strimzi-cluster-operator-role.yaml
+  - base/cluster-operator/021-ClusterRoleBinding-strimzi-cluster-operator.yaml
+  - base/cluster-operator/022-ClusterRole-strimzi-cluster-operator-role.yaml
+  - base/cluster-operator/022-RoleBinding-strimzi-cluster-operator.yaml
+  - base/cluster-operator/023-ClusterRole-strimzi-cluster-operator-role.yaml
+  - base/cluster-operator/023-RoleBinding-strimzi-cluster-operator.yaml
+  - base/cluster-operator/030-ClusterRole-strimzi-kafka-broker.yaml
+  - base/cluster-operator/030-ClusterRoleBinding-strimzi-cluster-operator-kafka-broker-delegation.yaml
+  - base/cluster-operator/031-ClusterRole-strimzi-entity-operator.yaml
+  - base/cluster-operator/031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml
+  - base/cluster-operator/033-ClusterRole-strimzi-kafka-client.yaml
+  - base/cluster-operator/033-ClusterRoleBinding-strimzi-cluster-operator-kafka-client-delegation.yaml
+  - base/cluster-operator/040-Crd-kafka.yaml
+  - base/cluster-operator/041-Crd-kafkaconnect.yaml
+  - base/cluster-operator/042-Crd-strimzipodset.yaml
+  - base/cluster-operator/043-Crd-kafkatopic.yaml
+  - base/cluster-operator/044-Crd-kafkauser.yaml
+  - base/cluster-operator/045-Crd-kafkamirrormaker.yaml
+  - base/cluster-operator/046-Crd-kafkabridge.yaml
+  - base/cluster-operator/047-Crd-kafkaconnector.yaml
+  - base/cluster-operator/048-Crd-kafkamirrormaker2.yaml
+  - base/cluster-operator/049-Crd-kafkarebalance.yaml
+  - base/cluster-operator/04A-Crd-kafkanodepool.yaml
+  - base/cluster-operator/050-ConfigMap-strimzi-cluster-operator.yaml
+  - base/cluster-operator/060-Deployment-strimzi-cluster-operator.yaml
+
+  # Create Kafka Cluster
+  - base/kafka-cluster.yaml

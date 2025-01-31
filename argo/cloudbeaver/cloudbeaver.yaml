@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lakehouse-mpp-wui
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: lakehouse
+  source:
+    path: apps/cloudbeaver
+    repoURL: 'https://github.com/semeteycoskun/lakehouse.git'
+    targetRevision: HEAD
+  destination:
+    namespace: cloudbeaver
+    server: 'https://kubernetes.default.svc'

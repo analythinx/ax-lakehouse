@@ -1,0 +1,123 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: trino
+labels:
+- includeSelectors: true
+  pairs:
+    ax.platform.component-type: mpp
+helmCharts:
+- name: trino
+  releaseName: trino
+  repo: https://trinodb.github.io/charts
+resources:
+  - base/ns.yaml
+  - base/trino-catalog-secret.yaml
+  - base/trino-coordinator-config-secret.yaml
+
+
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/containers/0/args/0
+        value: trino://trino.trino.svc.cluster.local:8080
+    target:
+      kind: Pod
+      name: trino-test-connection
+  - patch: |-
+      - op: replace
+        path: /data
+        value:
+          config.properties: |
+            coordinator=false
+            http-server.http.port=8080
+            query.max-memory=4GB
+            query.max-memory-per-node=1GB
+            discovery.uri=http://trino.trino.svc.cluster.local:8080
+          jvm.config: |
+            -server
+            -agentpath:/usr/lib/trino/bin/libjvmkill.so
+            -Xmx8G
+            -XX:+UseG1GC
+            -XX:G1HeapRegionSize=32M
+            -XX:+ExplicitGCInvokesConcurrent
+            -XX:+HeapDumpOnOutOfMemoryError
+            -XX:+ExitOnOutOfMemoryError
+            -XX:-OmitStackTraceInFastThrow
+            -XX:ReservedCodeCacheSize=512M
+            -XX:PerMethodRecompilationCutoff=10000
+            -XX:PerBytecodeRecompilationCutoff=10000
+            -Djdk.attach.allowAttachSelf=true
+            -Djdk.nio.maxCachedBufferSize=2000000
+            # Allow loading dynamic agent used by JOL
+            -XX:+EnableDynamicAgentLoading
+
+            # https://bugs.openjdk.org/browse/JDK-8329528
+            -XX:+UnlockDiagnosticVMOptions
+          log.properties: |
+            io.trino=INFO
+          node.properties: |
+            node.environment=test
+            node.data-dir=/data/trino
+            plugin.dir=/usr/lib/trino/plugin
+    target:
+      kind: ConfigMap
+      name: trino-worker
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/volumes
+        value:
+          - secret:
+              secretName: trino-coordinator-config-secret
+            name: config-volume
+          - configMap:
+              name: trino-schemas-volume-coordinator
+            name: schemas-volume
+          - secret:
+              secretName: trino-catalog-secret
+            name: catalog-volume
+    target:
+      kind: Deployment
+      name: trino-coordinator
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/volumes
+        value:
+          - name: config-volume
+            configMap:
+              name: trino-worker
+              defaultMode: 420
+          - secret:
+              secretName: trino-catalog-secret
+            name: catalog-volume
+          - name: schemas-volume
+            configMap:
+              name: trino-schemas-volume-worker
+              defaultMode: 420
+    target:
+      kind: Deployment
+      name: trino-worker
+  - patch: |
+      $patch: delete
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: trino-catalog
+    target:
+      kind: ConfigMap
+      name: trino-catalog
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: trinodb/trino:468
+    target:
+      kind: Deployment
+      name: trino-coordinator
+
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: trinodb/trino:468
+    target:
+      kind: Deployment
+      name: trino-worker
