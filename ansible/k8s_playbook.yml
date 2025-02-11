@@ -38,7 +38,7 @@
           dest: "{{ item.dest }}"
       loop:
         - { src: containerd-2.0.1-linux-amd64.tar.gz, dest: /usr/local }
-        - { src: cni-plugins-linux-amd64-v1.6.1.tgz, dest: /opt/cni/bin }
+        - { src: cni-plugins-linux-amd64-v1.6.2.tgz, dest: /opt/cni/bin }
         - { src: nerdctl-2.0.2-linux-amd64.tar.gz, dest: /usr/local/bin }
 
     - name: Copy containerd files
@@ -119,17 +119,17 @@
         state: started
         enabled: yes
 
-    - name: Enable insecure access to image registry
-      blockinfile:
-              path: /etc/containerd/config.toml
-              create: true
-              block: |
-                      version = 3
-                      
-                      [plugins."io.containerd.cri.v1.images".registry]
-                        [plugins."io.containerd.cri.v1.images".registry.mirrors]
-                          [plugins."io.containerd.cri.v1.images".registry.mirrors."192.168.0.21:5000"]
-                            endpoint = ["http://192.168.0.21:5000"]
+        #    - name: Enable insecure access to image registry
+        #blockinfile:
+        #      path: /etc/containerd/config.toml
+        #      create: true
+        #      block: |
+        #              version = 3
+        #              
+        #              [plugins."io.containerd.cri.v1.images".registry]
+        #                [plugins."io.containerd.cri.v1.images".registry.mirrors]
+        #                  [plugins."io.containerd.cri.v1.images".registry.mirrors."192.168.0.21:5000"]
+        #                    endpoint = ["http://192.168.0.21:5000"]
 
     - name: Start containerd
       systemd:
@@ -174,7 +174,7 @@
         remote_src: yes
 
     - name: Apply Flannel CNI network
-      command: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+      command: kubectl apply -f kube-flannel.yml
 
 
     - name: Wait until first master is ready after network setup
@@ -226,7 +226,7 @@
                 kubectl apply -f - -n kube-system
 
      - name: Install MetalLB by manifest file
-       command: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
+       command: kubectl apply -f metallb-native.yaml
 
      - name: Wait until MetalLB pods are ready
        command: kubectl wait --namespace metallb-system --for=condition=ready pod --selector=component=controller --timeout=10m
@@ -249,7 +249,7 @@
   hosts: first_master
   tasks:
       - name: Apply nginx manifest file
-        command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/cloud/deploy.yaml
+        command: kubectl apply -f ingress-nginx.yaml
 
       - name: Wait for nginx pods to be ready
         command: kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller  --timeout=10m
