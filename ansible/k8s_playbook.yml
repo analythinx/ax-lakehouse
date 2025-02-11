@@ -1,0 +1,292 @@
+- name: Install Docker and Kubernetes on RHEL 9
+  hosts: all
+  become: true
+  tasks:
+    - name: Temporarily disable SELinux
+      command: setenforce 0
+      ignore_errors: yes
+
+    - name: Permanently disable SELinux
+      lineinfile:
+        path: /etc/selinux/config
+        regexp: '^SELINUX='
+        line: 'SELINUX=disabled'
+    
+    - name: Disable swap temporarily
+      command: swapoff -a
+      ignore_errors: true  # In case swap is already off
+
+    - name: Permanently disable swap by commenting out swap entry in /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^.*swap.*'
+        line: '#\0'  # Comment out any swap entry
+        backup: yes
+
+    - name: Creates k8s and containerd files
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - /root/.kube/
+        - /opt/cni/bin
+        - /etc/containerd
+
+    - name: Unarchive containerd files
+      unarchive: 
+          src: "{{ item.src }}" 
+          dest: "{{ item.dest }}"
+      loop:
+        - { src: containerd-2.0.1-linux-amd64.tar.gz, dest: /usr/local }
+        - { src: cni-plugins-linux-amd64-v1.6.1.tgz, dest: /opt/cni/bin }
+        - { src: nerdctl-2.0.2-linux-amd64.tar.gz, dest: /usr/local/bin }
+
+    - name: Copy containerd files
+      copy: 
+          src: "{{ item.src }}" 
+          dest: "{{ item.dest }}"
+          mode: "{{ item.mode }}"
+      loop:
+        - { src: runc.amd64, dest: /usr/local/sbin/runc, mode: "0755" }
+        - { src: containerd.service, dest: /etc/systemd/system/containerd.service, mode: "0755" }
+
+    - name: DEVMODE copy /etc/hosts
+      copy:
+         src: /etc/hosts
+         dest: /etc/hosts
+
+    - name: DEVMODE disable firewalld
+      service:
+              name: firewalld
+              state: stopped
+              enabled: false
+
+    - name: Set sysctl ip forward setting
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: 1
+        state: present
+        reload: yes
+
+    - name: Load br_netfilter kernel module
+      modprobe:
+        name: br_netfilter
+        state: present
+        persistent: present
+        
+
+    - name: Set sysctl bridged packets to iptables setting
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: 1
+        state: present
+        reload: yes
+
+    # TODO: Need updated OS for newer k8s
+    # Install Kubernetes repositories
+    - name: Add Kubernetes repository
+      yum_repository:
+        name: kubernetes
+        description: Kubernetes Repository
+        baseurl: https://pkgs.k8s.io/core:/stable:/v1.32/rpm/
+        enabled: yes
+        gpgcheck: yes
+        gpgkey: https://pkgs.k8s.io/core:/stable:/v1.32/rpm/repodata/repomd.xml.key
+        # PRODMODE k8s has a different upgrade procedure so these packages should not upgrade with yum udpate
+        # exclude: kubelet kubeadm kubectl cri-tools kubernetes-cni
+  
+    # Install Kubernetes components (kubeadm, kubelet, kubectl)
+    - name: Install Kubernetes packages
+      yum:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+          - iproute-tc
+        state: present
+
+    - name: DEVMODE Tolerate swap in kubelet
+      lineinfile:
+        path: /etc/sysconfig/kubelet
+        regexp: '^KUBELET_EXTRA_ARGS=.*'
+        line: 'KUBELET_EXTRA_ARGS=--fail-swap-on=false'
+        backup: yes
+
+    # Start and enable kubelet
+    - name: Start and enable kubelet service
+      systemd:
+        name: kubelet
+        state: started
+        enabled: yes
+
+    - name: Enable insecure access to image registry
+      blockinfile:
+              path: /etc/containerd/config.toml
+              create: true
+              block: |
+                      version = 3
+                      
+                      [plugins."io.containerd.cri.v1.images".registry]
+                        [plugins."io.containerd.cri.v1.images".registry.mirrors]
+                          [plugins."io.containerd.cri.v1.images".registry.mirrors."192.168.0.21:5000"]
+                            endpoint = ["http://192.168.0.21:5000"]
+
+    - name: Start containerd
+      systemd:
+        state: started
+        enabled: yes
+        name: containerd
+        daemon_reload: yes
+
+- name: Setup kube-vip for kube-apiserver load balancing
+  hosts: masters
+  become: true
+  tasks:
+    - name: Create manifest directory
+      file:
+        path: "/etc/kubernetes/manifests"
+        state: directory
+
+    - name: Copy kube-vip manifest file
+      copy:
+       src: kube_manifests/kube-vip.yaml
+       dest: /etc/kubernetes/manifests/
+
+
+- name: Initialize first control plane node
+  hosts: first_master
+  become: true
+  tasks:
+    - name: Initialize first kubernetes control plane node
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint "192.168.0.90:6443" --image-repository "192.168.0.21:5000"
+      register: kubeadm_init
+
+
+    - name: Debug kubeadm_init
+      debug:
+        msg: "{{ kubeadm_init }}"
+
+
+    - name: Copy kubeadm generated admin config for kubectl
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /root/.kube/config
+        remote_src: yes
+
+    - name: Apply Flannel CNI network
+      command: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+
+
+    - name: Wait until first master is ready after network setup
+      command: kubectl wait --for=condition=Ready nodes --all --timeout=10m
+
+    - name: Get baseline join command from master
+      command: kubeadm token create --print-join-command
+      register: kubeadm_join
+
+    - name: Kubeadm upload certs
+      command: kubeadm init phase upload-certs --upload-certs
+      register: upload_certs
+
+    - name: Get control plane join command
+      set_fact:
+        kubeadm_cp_join: "{{kubeadm_join.stdout}} --control-plane --certificate-key {{upload_certs.stdout_lines[-1]}}"
+
+- name: Join rest of the control planes
+  hosts: other_masters
+  serial: 1
+  become: true
+  tasks:
+
+    - name: Debug
+      debug:
+        msg: "{{hostvars['master1']['kubeadm_cp_join']}}"
+
+    - name: Use kubeadm control plane join command
+      command: "{{hostvars['master1']['kubeadm_cp_join']}}"
+      ignore_errors: true
+
+- name: Join Worker Nodes to Kubernetes Cluster
+  hosts: workers
+  serial: 1
+  become: true
+  tasks:
+    # Join the worker nodes to the cluster (using the join command from master)
+    - name: Join the Kubernetes worker node to the cluster
+      command: "{{ hostvars['master1']['kubeadm_join'].stdout }}"
+      #when: hostvars['master1']['kubeadm_init'] is defined
+
+- name: Install MetalLB
+  hosts: first_master
+  tasks:
+     - name: Enable strictarp
+       shell: |
+                kubectl get configmap kube-proxy -n kube-system -o yaml |
+                sed -e "s/strictARP: false/strictARP: true/" |
+                kubectl apply -f - -n kube-system
+
+     - name: Install MetalLB by manifest file
+       command: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
+
+     - name: Wait until MetalLB pods are ready
+       command: kubectl wait --namespace metallb-system --for=condition=ready pod --selector=component=controller --timeout=10m
+
+     - name: Copy MetalLB configs
+       copy:
+         src: "{{ item }}"
+         dest: .
+       loop:
+        - metallb/address-pool.yml
+        - metallb/l2advertisement.yml
+     
+     - name: Apply address pool config
+       command: kubectl apply -f address-pool.yml
+
+     - name: Apply L2 advertisement config
+       command: kubectl apply -f l2advertisement.yml
+
+- name: Install nginx ingress controller
+  hosts: first_master
+  tasks:
+      - name: Apply nginx manifest file
+        command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.5.1/deploy/static/provider/cloud/deploy.yaml
+
+      - name: Wait for nginx pods to be ready
+        command: kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller  --timeout=10m
+
+- name: Fire test applications and ingress setup
+  hosts: first_master
+  tasks:
+     - name: Wait until all nodes are ready
+       command: kubectl wait node --all --for condition=ready --timeout=15m
+
+     - name: Delete previous versions of deployments and services
+       shell: |
+               kubectl delete deployment first-app second-app
+               kubectl delete service first-app second-app
+               kubectl delete ingress demo-ingress
+       ignore_errors: true
+
+     - name: Create first-app deployment
+       command: kubectl create deployment first-app --image=hashicorp/http-echo --replicas=2 --port=5678 -- /http-echo -text="first app"
+     
+     - name: Expose first-app
+       command: kubectl expose deployment first-app
+
+     - name: Create second-app deployment
+       command: kubectl create deployment second-app --image=hashicorp/http-echo --replicas=2 --port=5678 -- /http-echo -text="second app"
+
+     - name: Expose second-app
+       command: kubectl expose deployment second-app
+
+     #- name: Get clusterip
+     #  command: kubectl get svc hello-world-service -o jsonpath='{.spec.clusterIP}'
+     #  register: clusterip
+
+     - name: Wait until all app pods are ready
+       shell: |
+               kubectl wait --for=condition=ready pod -l app=first-app --timeout=5m
+               kubectl wait --for=condition=ready pod -l app=second-app --timeout=5m
+
+     - name: Create ingress
+       command: kubectl create ingress demo-ingress --class=nginx --rule="/first*=first-app:5678" --rule="/second*=second-app:5678"

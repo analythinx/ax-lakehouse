@@ -1,0 +1,11 @@
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+192.168.0.23	master1 master1.analythinx.local
+192.168.0.22	master2 master2.analythinx.local
+192.168.0.27	master3 master3.analythinx.local
+
+192.168.0.24	worker1 worker1.analythinx.local
+192.168.0.25	worker2 worker2.analythinx.local
+192.168.0.28	worker3 worker3.analythinx.local
+

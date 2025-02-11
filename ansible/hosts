@@ -1,0 +1,15 @@
+[first_master]
+master1
+
+[other_masters]
+master2
+master3
+
+[masters:children]
+first_master
+other_masters
+
+[workers]
+worker1
+worker2
+worker3
