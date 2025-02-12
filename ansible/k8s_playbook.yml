@@ -31,6 +31,7 @@
         - /root/.kube/
         - /opt/cni/bin
         - /etc/containerd
+        - /etc/containerd/certs.d/_default
 
     - name: Unarchive containerd files
       unarchive: 
@@ -119,21 +120,29 @@
         state: started
         enabled: yes
 
-        #    - name: Enable insecure access to image registry
-        #blockinfile:
-        #      path: /etc/containerd/config.toml
-        #      create: true
-        #      block: |
-        #              version = 3
-        #              
-        #              [plugins."io.containerd.cri.v1.images".registry]
-        #                [plugins."io.containerd.cri.v1.images".registry.mirrors]
-        #                  [plugins."io.containerd.cri.v1.images".registry.mirrors."192.168.0.21:5000"]
-        #                    endpoint = ["http://192.168.0.21:5000"]
+    - name: Config containerd
+      blockinfile:
+        path: /etc/containerd/config.toml
+        create: true
+        block: |
+             version = 3
+              
+              [plugins."io.containerd.cri.v1.images".registry]
+                config_path = "/etc/containerd/certs.d"
+
+    - name: Config containerd registry
+      blockinfile:
+        path: /etc/containerd/certs.d/_default/hosts.toml
+        create: true
+        block: |
+                server = "https://192.168.0.21:5000"
+
+                [host."https://192.168.0.21:5000"]
+                  skip_verify = true
 
     - name: Start containerd
       systemd:
-        state: started
+        state: restarted
         enabled: yes
         name: containerd
         daemon_reload: yes
@@ -172,6 +181,16 @@
         src: /etc/kubernetes/admin.conf
         dest: /root/.kube/config
         remote_src: yes
+
+    - name: Copy service yamls
+      copy:
+          src: "{{ item.src }}"
+          dest: "."
+      loop:
+        - { src: kube-flannel.yml }
+        - { src: ingress-nginx.yml }
+        - { src: metallb-native.yml }
+
 
     - name: Apply Flannel CNI network
       command: kubectl apply -f kube-flannel.yml
@@ -226,7 +245,7 @@
                 kubectl apply -f - -n kube-system
 
      - name: Install MetalLB by manifest file
-       command: kubectl apply -f metallb-native.yaml
+       command: kubectl apply -f metallb-native.yml
 
      - name: Wait until MetalLB pods are ready
        command: kubectl wait --namespace metallb-system --for=condition=ready pod --selector=component=controller --timeout=10m
@@ -249,7 +268,7 @@
   hosts: first_master
   tasks:
       - name: Apply nginx manifest file
-        command: kubectl apply -f ingress-nginx.yaml
+        command: kubectl apply -f ingress-nginx.yml
 
       - name: Wait for nginx pods to be ready
         command: kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller  --timeout=10m
