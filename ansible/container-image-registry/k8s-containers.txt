@@ -1,5 +1,5 @@
-ghcr.io/flannel-io/flannel-cni-plugin
-ghcr.io/flannel-io/flannel
+ghcr.io/flannel-io/flannel-cni-plugin:v1.6.2-flannel1
+ghcr.io/flannel-io/flannel:v0.26.4
 ghcr.io/kube-vip/kube-vip:v0.8.9
 hashicorp/http-echo
 quay.io/metallb/controller:v0.14.9
