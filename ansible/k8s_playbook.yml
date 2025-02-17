@@ -167,7 +167,7 @@
   become: true
   tasks:
     - name: Initialize first kubernetes control plane node
-      command: kubeadm init --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint "192.168.0.90:6443" --image-repository "192.168.0.21:5000"
+      command: kubeadm init --kubernetes-version 1.32.1 --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint "192.168.0.90:6443" --image-repository "192.168.0.21:5000"
       register: kubeadm_init
 
 

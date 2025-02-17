@@ -1,0 +1,15 @@
+- name: Install Docker and Kubernetes on RHEL 9
+  hosts: first_master
+  become: true
+  tasks:
+    - name: Create argo namespace
+      command: kubectl create namespace argocd
+      ignore_errors: true
+
+    - name: Copy argo manifest
+      copy:
+        src: argocd/argo-install.yaml
+        dest: .
+
+    - name: Apply argo yaml
+      command: kubectl apply -n argocd -f argo-install.yaml 

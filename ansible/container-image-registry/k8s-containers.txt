@@ -1,3 +1,6 @@
+ghcr.io/dexidp/dex:v2.41.1
+quay.io/argoproj/argocd:v2.14.2
+redis:7.0.15-alpine
 ghcr.io/flannel-io/flannel-cni-plugin:v1.6.2-flannel1
 ghcr.io/flannel-io/flannel:v0.26.4
 ghcr.io/kube-vip/kube-vip:v0.8.9
