@@ -9,7 +9,7 @@ spec:
   project: lakehouse
   source:
     path: apps/cloudbeaver
-    repoURL: 'https://github.com/semeteycoskun/lakehouse.git'
+    repoURL: 'https://github.com/analythinx/ax-lakehouse.git'
     targetRevision: HEAD
   destination:
     namespace: cloudbeaver
