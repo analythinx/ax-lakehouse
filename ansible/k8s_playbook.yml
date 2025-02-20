@@ -135,8 +135,6 @@
         path: /etc/containerd/certs.d/_default/hosts.toml
         create: true
         block: |
-                server = "https://192.168.0.21:5000"
-
                 [host."https://192.168.0.21:5000"]
                   skip_verify = true
 
