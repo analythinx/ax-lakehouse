@@ -13,7 +13,7 @@ spec:
       containers:
       - env: []
         envFrom: []
-        image: analythinx/ranger-admin:2.5.1-SNAPSHOT.v06
+        image: analythinx/ranger-admin:2.5.1-SNAPSHOT.v07
         imagePullPolicy: IfNotPresent
         lifecycle: {}
         name: ranger-admin
