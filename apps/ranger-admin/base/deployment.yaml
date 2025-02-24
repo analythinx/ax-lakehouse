@@ -17,6 +17,9 @@ spec:
         imagePullPolicy: IfNotPresent
         lifecycle: {}
         name: ranger-admin
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsUser: 0
         ports:
         - containerPort: 6080
           name: http
