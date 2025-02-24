@@ -13,13 +13,10 @@ spec:
       containers:
       - env: []
         envFrom: []
-        image: analythinx/ranger-admin:2.5.1-SNAPSHOT.v08
+        image: analythinx/ranger-admin:2.5.1-SNAPSHOT.v02
         imagePullPolicy: IfNotPresent
         lifecycle: {}
         name: ranger-admin
-        securityContext:
-          allowPrivilegeEscalation: false
-          runAsUser: 0
         ports:
         - containerPort: 6080
           name: http
