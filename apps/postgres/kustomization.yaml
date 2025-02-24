@@ -13,7 +13,8 @@ helmCharts:
 - name: postgresql
   releaseName: 15.6.0
   repo: oci://registry-1.docker.io/bitnamicharts
-
+images:
+  - name: docker.io/bitnami/postgresql:15.6.0
 resources:
   - base/ns.yaml
   - base/pv.yaml
