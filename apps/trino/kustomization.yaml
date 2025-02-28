@@ -40,12 +40,12 @@ patches:
             -agentpath:/usr/lib/trino/bin/libjvmkill.so
             -Xmx32G
             -XX:+UseG1GC
-            -XX:G1HeapRegionSize=256M
+            -XX:G1HeapRegionSize=96M
             -XX:+ExplicitGCInvokesConcurrent
             -XX:+HeapDumpOnOutOfMemoryError
             -XX:+ExitOnOutOfMemoryError
             -XX:-OmitStackTraceInFastThrow
-            -XX:ReservedCodeCacheSize=1024M
+            -XX:ReservedCodeCacheSize=96M
             -XX:PerMethodRecompilationCutoff=10000
             -XX:PerBytecodeRecompilationCutoff=10000
             -Djdk.attach.allowAttachSelf=true
@@ -81,12 +81,12 @@ patches:
             -agentpath:/usr/lib/trino/bin/libjvmkill.so
             -Xmx96G
             -XX:+UseG1GC
-            -XX:G1HeapRegionSize=1024M
+            -XX:G1HeapRegionSize=96M
             -XX:+ExplicitGCInvokesConcurrent
             -XX:+HeapDumpOnOutOfMemoryError
             -XX:+ExitOnOutOfMemoryError
             -XX:-OmitStackTraceInFastThrow
-            -XX:ReservedCodeCacheSize=1024M
+            -XX:ReservedCodeCacheSize=96M
             -XX:PerMethodRecompilationCutoff=10000
             -XX:PerBytecodeRecompilationCutoff=10000
             -Djdk.attach.allowAttachSelf=true
