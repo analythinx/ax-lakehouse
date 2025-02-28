@@ -34,7 +34,7 @@ patches:
             query.max-memory=120GB
             query.max-total-memory=128GB
             query.max-memory-per-node=30GB
-            memory.head-headroom-per-node=2GB
+            memory.heap-headroom-per-node=2GB
             discovery.uri=http://trino.trino.svc.cluster.local:8080
           jvm.config: |
             -server
@@ -76,7 +76,7 @@ patches:
             query.max-memory=120GB
             query.max-total-memory=128GB
             query.max-memory-per-node=30GB
-            memory.head-headroom-per-node=2GB
+            memory.heap-headroom-per-node=2GB
             discovery.uri=http://localhost:8080
           jvm.config: |
             -server
