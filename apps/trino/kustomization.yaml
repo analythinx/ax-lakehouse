@@ -31,14 +31,14 @@ patches:
           config.properties: |
             coordinator=false
             http-server.http.port=8080
-            query.max-memory=128GB
-            query.max-total-memory=160GB
-            query.max-memory-per-node=32GB
+            query.max-memory=120GB
+            query.max-total-memory=128GB
+            query.max-memory-per-node=30GB
             discovery.uri=http://trino.trino.svc.cluster.local:8080
           jvm.config: |
             -server
             -agentpath:/usr/lib/trino/bin/libjvmkill.so
-            -Xmx24G
+            -Xmx32G
             -XX:+UseG1GC
             -XX:G1HeapRegionSize=96M
             -XX:+ExplicitGCInvokesConcurrent
@@ -72,9 +72,9 @@ patches:
             coordinator=true
             node-scheduler.include-coordinator=false
             http-server.http.port=8080
-            query.max-memory=128GB
-            query.max-total-memory=160GB
-            query.max-memory-per-node=64GB
+            query.max-memory=120GB
+            query.max-total-memory=128GB
+            query.max-memory-per-node=30GB
             discovery.uri=http://localhost:8080
           jvm.config: |
             -server
