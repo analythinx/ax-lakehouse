@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    development-env: "vscode"
+    platform: "ax-lakehouse"
+  name: vscode-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      development-env: "vscode"
+      platform: "ax-lakehouse"
+  template:
+    metadata:
+      labels:
+        development-env: "vscode"
+        platform: "ax-lakehouse"
+    spec:
+      containers:
+      - env: []
+        envFrom: []
+        image: analythinx/coder-vscode-server:v03
+        imagePullPolicy: IfNotPresent
+        lifecycle: {}
+        name: vscode-server
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
