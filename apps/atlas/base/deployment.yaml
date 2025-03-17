@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+  name: atlas
+spec:
+  replicas: 1
+  selector:
+  template:
+    metadata:
+      labels:
+    spec:
+      containers:
+      - env: []
+        envFrom: []
+        image: analythinx/atlas:2.4.0-v04
+        imagePullPolicy: IfNotPresent
+        lifecycle: {}
+        name: atlas
+        ports:
+        - containerPort: 21000
+          name: http
+          protocol: TCP
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /tmp/from-secret
+          name: config-volume
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: config-volume
+        secret:
+          secretName: config-volume

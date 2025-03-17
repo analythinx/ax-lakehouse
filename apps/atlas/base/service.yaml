@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+  name: atlas
+spec:
+  ports:
+  - name: http
+    port: 21000
+    targetPort: 21000
+    protocol: TCP
+  selector:
+    ax.platform.component-type: data-governance
+    ax.platform.component-subtype: metadata
+  type: ClusterIP
