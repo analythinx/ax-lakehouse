@@ -13,7 +13,7 @@ spec:
       containers:
       - env: []
         envFrom: []
-        image: analythinx/atlas:2.4.0-v04
+        image: analythinx/atlas:2.4.0-v05
         imagePullPolicy: IfNotPresent
         lifecycle: {}
         name: atlas
