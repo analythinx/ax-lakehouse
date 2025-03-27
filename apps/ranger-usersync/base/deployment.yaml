@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+  name: ranger-usersync
+spec:
+  replicas: 1
+  selector:
+  template:
+    metadata:
+      labels:
+    spec:
+      containers:
+      - env: []
+        envFrom: []
+        image: analythinx/ranger-usersync:2.5.1-SNAPSHOT.v02
+        imagePullPolicy: IfNotPresent
+        lifecycle: {}
+        name: ranger-usersync
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /tmp/from-secret
+          name: config-volume
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: config-volume
+        secret:
+          secretName: usersync-config-volume
