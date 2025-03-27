@@ -10,4 +10,6 @@ spec:
     targetPort: 6080
     protocol: TCP
   selector:
+    ax.platform.component-type: authz
+    ax.platform.component-subtype: authz-admin
   type: ClusterIP
